@@ -1,0 +1,499 @@
+{
+  "entities": {
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator privilege record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Administrator user UID."
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when admin role was granted."
+        }
+      },
+      "required": ["uid", "grantedAt"]
+    },
+    "IsoDocument": {
+      "title": "IsoDocument",
+      "description": "Controlled ISO 9001 document in the Document Master List.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the document record owner."
+        },
+        "docCode": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique ISO controlled document code (e.g., SOP-QA-001)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "description": "Controlled document title."
+        },
+        "department": {
+          "type": "string",
+          "enum": [
+            "Quality Assurance",
+            "Engineering",
+            "Manufacturing",
+            "Regulatory Affairs",
+            "Procurement",
+            "Operations"
+          ],
+          "description": "Owning ISO department."
+        },
+        "isoClause": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Referenced ISO 9001:2015 standard clause."
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "description": "Current revision identifier (e.g., Rev 1.0)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ACTIVE", "UNDER_REVISION", "CANCELLED"],
+          "description": "Lifecycle status of the controlled document."
+        },
+        "effectiveDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 30,
+          "description": "ISO date when current revision took effect."
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name of the document author."
+        },
+        "approverName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name of the QMG approver."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 2000,
+          "description": "Controlled document scope and normative content summary."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of initial document creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of most recent update."
+        }
+      },
+      "required": [
+        "ownerId",
+        "docCode",
+        "title",
+        "department",
+        "isoClause",
+        "revision",
+        "status",
+        "effectiveDate",
+        "authorName",
+        "approverName",
+        "summary",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DcrRequest": {
+      "title": "DcrRequest",
+      "description": "ISO Document Change Request (Add, Change, or Cancel workflow record).",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the user who owns this workspace record."
+        },
+        "dcrNumber": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Formatted DCR tracking number (e.g., DCR-2026-001)."
+        },
+        "requestType": {
+          "type": "string",
+          "enum": ["ADD", "CHANGE", "CANCEL"],
+          "description": "Type of document change request."
+        },
+        "docCode": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Target controlled document code."
+        },
+        "docTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "description": "Target controlled document title."
+        },
+        "department": {
+          "type": "string",
+          "enum": [
+            "Quality Assurance",
+            "Engineering",
+            "Manufacturing",
+            "Regulatory Affairs",
+            "Procurement",
+            "Operations"
+          ],
+          "description": "Department initiating the DCR."
+        },
+        "isoClause": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Applicable ISO 9001 clause."
+        },
+        "currentRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "description": "Existing revision prior to change."
+        },
+        "proposedRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "description": "Target revision upon QMG approval."
+        },
+        "justification": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 1500,
+          "description": "Justification for adding, changing, or cancelling the document."
+        },
+        "draftContent": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 2500,
+          "description": "Drafted document text, redline changes, or cancellation disposition."
+        },
+        "isDraftCompleted": {
+          "type": "boolean",
+          "description": "True when drafting and justification meet the Completed? decision gate."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["DRAFT", "PENDING_QMG", "APPROVED", "REJECTED"],
+          "description": "Workflow state in frmDocChangeSwitchboard."
+        },
+        "requesterName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Name of initiator."
+        },
+        "qmgReviewerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Name of QMG reviewer or Pending QMG."
+        },
+        "qmgComments": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "QMG review notes or disposition comments."
+        },
+        "requestDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 30,
+          "description": "ISO date of DCR creation (YYYY-MM-DD)."
+        },
+        "requestYear": {
+          "type": "number",
+          "description": "Four-digit calendar year of request for annual DCR reporting."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last workflow transition."
+        }
+      },
+      "required": [
+        "ownerId",
+        "dcrNumber",
+        "requestType",
+        "docCode",
+        "docTitle",
+        "department",
+        "isoClause",
+        "currentRevision",
+        "proposedRevision",
+        "justification",
+        "draftContent",
+        "isDraftCompleted",
+        "status",
+        "requesterName",
+        "qmgReviewerName",
+        "qmgComments",
+        "requestDate",
+        "requestYear",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DocumentChangeLog": {
+      "title": "DocumentChangeLog",
+      "description": "Immutable ISO audit trail entry recording document additions, revisions, and cancellations.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the workspace owner."
+        },
+        "dcrNumber": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Associated DCR number."
+        },
+        "docCode": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Controlled document code."
+        },
+        "docTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "description": "Controlled document title."
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["ADDED", "CHANGED", "CANCELLED", "RETURNED"],
+          "description": "Audit action recorded."
+        },
+        "previousRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "description": "Prior revision string."
+        },
+        "newRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "description": "New revision string."
+        },
+        "department": {
+          "type": "string",
+          "enum": [
+            "Quality Assurance",
+            "Engineering",
+            "Manufacturing",
+            "Regulatory Affairs",
+            "Procurement",
+            "Operations"
+          ],
+          "description": "Responsible department."
+        },
+        "actorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "QMG reviewer or initiator who executed the action."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 1000,
+          "description": "Audit trail summary."
+        },
+        "effectiveDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 30,
+          "description": "Date of log action."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "dcrNumber",
+        "docCode",
+        "docTitle",
+        "actionType",
+        "previousRevision",
+        "newRevision",
+        "department",
+        "actorName",
+        "summary",
+        "effectiveDate",
+        "createdAt"
+      ]
+    },
+    "DocumentDistribution": {
+      "title": "DocumentDistribution",
+      "description": "Controlled document distribution record tracking department copy holders and acknowledgment status.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the workspace owner."
+        },
+        "copyNumber": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 30,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Controlled copy identifier (e.g., CC-QA-01)."
+        },
+        "docCode": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Distributed document code."
+        },
+        "docTitle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "description": "Distributed document title."
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20,
+          "description": "Distributed document revision."
+        },
+        "recipientDepartment": {
+          "type": "string",
+          "enum": [
+            "Quality Assurance",
+            "Engineering",
+            "Manufacturing",
+            "Regulatory Affairs",
+            "Procurement",
+            "Operations"
+          ],
+          "description": "Department receiving the controlled copy."
+        },
+        "holderRole": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Role or title of controlled copy holder."
+        },
+        "medium": {
+          "type": "string",
+          "enum": ["Electronic QMS", "Controlled Hardcopy"],
+          "description": "Distribution format."
+        },
+        "distributionStatus": {
+          "type": "string",
+          "enum": ["DISTRIBUTED", "ACKNOWLEDGED", "RECALLED"],
+          "description": "Current receipt or recall status."
+        },
+        "distributedDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 30,
+          "description": "ISO date of distribution."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of status update."
+        }
+      },
+      "required": [
+        "ownerId",
+        "copyNumber",
+        "docCode",
+        "docTitle",
+        "revision",
+        "recipientDepartment",
+        "holderRole",
+        "medium",
+        "distributionStatus",
+        "distributedDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "AdminRecord",
+      "description": "Trusted administrator lookup collection."
+    },
+    "/documents/{docId}": {
+      "schema": "IsoDocument",
+      "description": "Controlled ISO 9001 Document Master List records."
+    },
+    "/dcrRequests/{dcrId}": {
+      "schema": "DcrRequest",
+      "description": "Document Change Request (DCR) workflow records."
+    },
+    "/changeLogs/{logId}": {
+      "schema": "DocumentChangeLog",
+      "description": "Immutable chronological Document Change Log entries."
+    },
+    "/distributions/{distId}": {
+      "schema": "DocumentDistribution",
+      "description": "Controlled Document Distribution matrix records."
+    }
+  }
+}

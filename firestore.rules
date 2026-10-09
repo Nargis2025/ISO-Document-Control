@@ -1,0 +1,278 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'itdecode7@gmail.com'
+      );
+    }
+
+    function isValidDepartment(dept) {
+      return dept is string && dept.size() <= 40 && (
+        dept == 'Quality Assurance' ||
+        dept == 'Engineering' ||
+        dept == 'Manufacturing' ||
+        dept == 'Regulatory Affairs' ||
+        dept == 'Procurement' ||
+        dept == 'Operations'
+      );
+    }
+
+    // Validation Blueprint: AdminRecord
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'grantedAt']) &&
+        data.keys().hasOnly(['uid', 'grantedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.grantedAt is timestamp;
+    }
+
+    // Validation Blueprint: IsoDocument
+    function isValidIsoDocument(data) {
+      return data.keys().hasAll([
+          'ownerId', 'docCode', 'title', 'department', 'isoClause',
+          'revision', 'status', 'effectiveDate', 'authorName',
+          'approverName', 'summary', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'docCode', 'title', 'department', 'isoClause',
+          'revision', 'status', 'effectiveDate', 'authorName',
+          'approverName', 'summary', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.docCode is string && data.docCode.size() >= 2 && data.docCode.size() <= 40 && data.docCode.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 160 &&
+        isValidDepartment(data.department) &&
+        data.isoClause is string && data.isoClause.size() >= 2 && data.isoClause.size() <= 60 &&
+        data.revision is string && data.revision.size() >= 1 && data.revision.size() <= 20 &&
+        data.status is string && data.status.size() <= 20 && (data.status == 'ACTIVE' || data.status == 'UNDER_REVISION' || data.status == 'CANCELLED') &&
+        data.effectiveDate is string && data.effectiveDate.size() >= 10 && data.effectiveDate.size() <= 30 &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.approverName is string && data.approverName.size() >= 1 && data.approverName.size() <= 80 &&
+        data.summary is string && data.summary.size() >= 5 && data.summary.size() <= 2000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: DcrRequest
+    function isValidDcrRequest(data) {
+      return data.keys().hasAll([
+          'ownerId', 'dcrNumber', 'requestType', 'docCode', 'docTitle',
+          'department', 'isoClause', 'currentRevision', 'proposedRevision',
+          'justification', 'draftContent', 'isDraftCompleted', 'status',
+          'requesterName', 'qmgReviewerName', 'qmgComments', 'requestDate',
+          'requestYear', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'dcrNumber', 'requestType', 'docCode', 'docTitle',
+          'department', 'isoClause', 'currentRevision', 'proposedRevision',
+          'justification', 'draftContent', 'isDraftCompleted', 'status',
+          'requesterName', 'qmgReviewerName', 'qmgComments', 'requestDate',
+          'requestYear', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.dcrNumber is string && data.dcrNumber.size() >= 3 && data.dcrNumber.size() <= 40 && data.dcrNumber.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.requestType is string && data.requestType.size() <= 10 && (data.requestType == 'ADD' || data.requestType == 'CHANGE' || data.requestType == 'CANCEL') &&
+        data.docCode is string && data.docCode.size() >= 2 && data.docCode.size() <= 40 && data.docCode.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.docTitle is string && data.docTitle.size() >= 3 && data.docTitle.size() <= 160 &&
+        isValidDepartment(data.department) &&
+        data.isoClause is string && data.isoClause.size() >= 2 && data.isoClause.size() <= 60 &&
+        data.currentRevision is string && data.currentRevision.size() >= 1 && data.currentRevision.size() <= 20 &&
+        data.proposedRevision is string && data.proposedRevision.size() >= 1 && data.proposedRevision.size() <= 20 &&
+        data.justification is string && data.justification.size() >= 5 && data.justification.size() <= 1500 &&
+        data.draftContent is string && data.draftContent.size() >= 5 && data.draftContent.size() <= 2500 &&
+        data.isDraftCompleted is bool &&
+        data.status is string && data.status.size() <= 20 && (data.status == 'DRAFT' || data.status == 'PENDING_QMG' || data.status == 'APPROVED' || data.status == 'REJECTED') &&
+        data.requesterName is string && data.requesterName.size() >= 1 && data.requesterName.size() <= 80 &&
+        data.qmgReviewerName is string && data.qmgReviewerName.size() >= 1 && data.qmgReviewerName.size() <= 80 &&
+        data.qmgComments is string && data.qmgComments.size() >= 1 && data.qmgComments.size() <= 1000 &&
+        data.requestDate is string && data.requestDate.size() >= 10 && data.requestDate.size() <= 30 &&
+        data.requestYear is number && data.requestYear >= 1990 && data.requestYear <= 2100 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: DocumentChangeLog
+    function isValidDocumentChangeLog(data) {
+      return data.keys().hasAll([
+          'ownerId', 'dcrNumber', 'docCode', 'docTitle', 'actionType',
+          'previousRevision', 'newRevision', 'department', 'actorName',
+          'summary', 'effectiveDate', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'dcrNumber', 'docCode', 'docTitle', 'actionType',
+          'previousRevision', 'newRevision', 'department', 'actorName',
+          'summary', 'effectiveDate', 'createdAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.dcrNumber is string && data.dcrNumber.size() >= 3 && data.dcrNumber.size() <= 40 && data.dcrNumber.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.docCode is string && data.docCode.size() >= 2 && data.docCode.size() <= 40 && data.docCode.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.docTitle is string && data.docTitle.size() >= 3 && data.docTitle.size() <= 160 &&
+        data.actionType is string && data.actionType.size() <= 20 && (data.actionType == 'ADDED' || data.actionType == 'CHANGED' || data.actionType == 'CANCELLED' || data.actionType == 'RETURNED') &&
+        data.previousRevision is string && data.previousRevision.size() >= 1 && data.previousRevision.size() <= 20 &&
+        data.newRevision is string && data.newRevision.size() >= 1 && data.newRevision.size() <= 20 &&
+        isValidDepartment(data.department) &&
+        data.actorName is string && data.actorName.size() >= 1 && data.actorName.size() <= 80 &&
+        data.summary is string && data.summary.size() >= 3 && data.summary.size() <= 1000 &&
+        data.effectiveDate is string && data.effectiveDate.size() >= 10 && data.effectiveDate.size() <= 30 &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: DocumentDistribution
+    function isValidDocumentDistribution(data) {
+      return data.keys().hasAll([
+          'ownerId', 'copyNumber', 'docCode', 'docTitle', 'revision',
+          'recipientDepartment', 'holderRole', 'medium', 'distributionStatus',
+          'distributedDate', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'copyNumber', 'docCode', 'docTitle', 'revision',
+          'recipientDepartment', 'holderRole', 'medium', 'distributionStatus',
+          'distributedDate', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.copyNumber is string && data.copyNumber.size() >= 2 && data.copyNumber.size() <= 30 && data.copyNumber.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.docCode is string && data.docCode.size() >= 2 && data.docCode.size() <= 40 && data.docCode.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.docTitle is string && data.docTitle.size() >= 3 && data.docTitle.size() <= 160 &&
+        data.revision is string && data.revision.size() >= 1 && data.revision.size() <= 20 &&
+        isValidDepartment(data.recipientDepartment) &&
+        data.holderRole is string && data.holderRole.size() >= 2 && data.holderRole.size() <= 80 &&
+        data.medium is string && data.medium.size() <= 30 && (data.medium == 'Electronic QMS' || data.medium == 'Controlled Hardcopy') &&
+        data.distributionStatus is string && data.distributionStatus.size() <= 20 && (data.distributionStatus == 'DISTRIBUTED' || data.distributionStatus == 'ACKNOWLEDGED' || data.distributionStatus == 'RECALLED') &&
+        data.distributedDate is string && data.distributedDate.size() >= 10 && data.distributedDate.size() <= 30 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list: if false;
+      allow create: if isAdmin() && isValidId(adminId) && isValidAdminRecord(incoming()) && incoming().grantedAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Collection: /documents/{docId}
+    match /documents/{docId} {
+      allow get: if isVerifiedUser() && isValidId(docId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(docId) && isValidIsoDocument(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(docId) && isValidIsoDocument(incoming()) &&
+        (existing().ownerId == request.auth.uid || isAdmin()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().docCode == existing().docCode &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (existing().status != 'CANCELLED' || isAdmin()) && (
+          isAdmin() ||
+          // Action 1: Revise or update controlled document metadata/status
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'department', 'isoClause', 'revision', 'status',
+            'effectiveDate', 'authorName', 'approverName', 'summary', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(docId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // Collection: /dcrRequests/{dcrId}
+    match /dcrRequests/{dcrId} {
+      allow get: if isVerifiedUser() && isValidId(dcrId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(dcrId) && isValidDcrRequest(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(dcrId) && isValidDcrRequest(incoming()) &&
+        (existing().ownerId == request.auth.uid || isAdmin()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().dcrNumber == existing().dcrNumber &&
+        incoming().requestType == existing().requestType &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        ((existing().status != 'APPROVED' && existing().status != 'REJECTED') || isAdmin()) && (
+          isAdmin() ||
+          // Action 1: Edit Draft / Justification / Completion Gate / Submit to QMG
+          (existing().status == 'DRAFT' &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'docCode', 'docTitle', 'department', 'isoClause',
+              'currentRevision', 'proposedRevision', 'justification',
+              'draftContent', 'isDraftCompleted', 'status',
+              'qmgReviewerName', 'qmgComments', 'updatedAt'
+            ])
+          ) ||
+          // Action 2: QMG Review Decision (Approve, Reject, or Return to Draft)
+          (existing().status == 'PENDING_QMG' &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'isDraftCompleted', 'status', 'qmgReviewerName', 'qmgComments', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(dcrId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // Collection: /changeLogs/{logId}
+    match /changeLogs/{logId} {
+      allow get: if isVerifiedUser() && isValidId(logId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(logId) && isValidDocumentChangeLog(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Collection: /distributions/{distId}
+    match /distributions/{distId} {
+      allow get: if isVerifiedUser() && isValidId(distId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(distId) && isValidDocumentDistribution(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(distId) && isValidDocumentDistribution(incoming()) &&
+        (existing().ownerId == request.auth.uid || isAdmin()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().copyNumber == existing().copyNumber &&
+        incoming().docCode == existing().docCode &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (existing().distributionStatus != 'RECALLED' || isAdmin()) && (
+          isAdmin() ||
+          // Action 1: Acknowledge receipt, update revision distribution, or recall obsolete copy
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'docTitle', 'revision', 'recipientDepartment', 'holderRole',
+            'medium', 'distributionStatus', 'distributedDate', 'updatedAt'
+          ])
+        );
+      allow delete: if isVerifiedUser() && isValidId(distId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+  }
+}

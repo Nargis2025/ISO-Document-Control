@@ -1,0 +1,6 @@
+{
+  "name": "Veritas ISO Document Control & QMS Switchboard",
+  "description": "ISO 9001 Document Management Switchboard (frmDocChangeSwitchboard) for managing Document Change Requests (DCR), QMG review workflows, controlled document master lists, distribution matrices, and compliance audit logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
